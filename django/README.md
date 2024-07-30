@@ -100,7 +100,7 @@ pip install library/face_recognition-1.3.0-py2.py3-none-any.whl
 Start the Django development server:
 
 ```bash
-# Using the virtual environment directly
+# Using the virtual environment directly (RECOMMENDED)
 .venv\Scripts\python.exe manage.py runserver
 
 # Or activate the virtual environment first
@@ -109,6 +109,16 @@ python manage.py runserver
 ```
 
 The application will be available at `http://localhost:8000`
+
+> [!IMPORTANT] > **Why not use `uv run`?**
+>
+> While UV is excellent for dependency management, `uv run python manage.py runserver` will fail with Django applications. This is because UV tries to build the project as a package, which causes errors like:
+>
+> ```
+> error: Multiple top-level packages discovered in a flat-layout
+> ```
+>
+> **Solution**: Always use the virtual environment directly (`.venv\Scripts\python.exe`) or activate the virtual environment first. This is the recommended approach for Django applications with UV.
 
 ## 📁 Project Structure
 
