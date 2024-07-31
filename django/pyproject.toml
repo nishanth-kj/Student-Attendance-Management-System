@@ -6,6 +6,8 @@ requires-python = ">=3.12"
 dependencies = [
     "django>=5.0",
     "djangorestframework>=3.14",
+    "django-cors-headers>=4.3",
+    "djangorestframework-simplejwt>=5.3",
     "astroid==3.2.3",
     "click==8.1.7",
     "cmake==3.30.0",
