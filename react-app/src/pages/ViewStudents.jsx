@@ -10,7 +10,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import apiClient from '../api/client';
+import api from '../api';
 
 const ViewStudents = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -20,7 +20,7 @@ const ViewStudents = () => {
     useEffect(() => {
         const fetchStudents = async () => {
             try {
-                const response = await apiClient.get('/attendance/students/');
+                const response = await api.getStudents();
                 setStudents(response.data);
             } catch (err) {
                 console.error("Failed to fetch students", err);
@@ -80,8 +80,14 @@ const ViewStudents = () => {
                             className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/40 group hover:-translate-y-2 transition-all duration-300"
                         >
                             <div className="relative mb-6">
-                                <div className="aspect-square rounded-[2rem] overflow-hidden bg-slate-100">
-                                    <img src={student.student_image} alt={student.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                <div className="aspect-square rounded-[2rem] overflow-hidden bg-slate-100 flex items-center justify-center">
+                                    {student.student_image ? (
+                                        <img src={student.student_image} alt={student.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                    ) : (
+                                        <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                                            <Users className="w-16 h-16 text-slate-300" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="absolute top-4 right-4 flex gap-2">
                                     <button className="bg-white/90 backdrop-blur-md p-2 rounded-xl text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg">

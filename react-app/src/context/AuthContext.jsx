@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import apiClient from '../api/client';
+import api from '../api';
 
 const AuthContext = createContext();
 
@@ -12,11 +12,10 @@ export const AuthProvider = ({ children }) => {
             const token = localStorage.getItem('access_token');
             if (token) {
                 try {
-                    const response = await apiClient.get('/auth/me/');
+                    const response = await api.getCurrentUser();
                     setUser(response.data);
                 } catch (err) {
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
+                    // Token invalid or expired
                 }
             }
             setLoading(false);
@@ -25,19 +24,19 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (username, password) => {
-        const response = await apiClient.post('/auth/login/', { username, password });
+        const response = await api.login(username, password);
         const { access, refresh } = response.data;
         localStorage.setItem('access_token', access);
         localStorage.setItem('refresh_token', refresh);
 
         // Fetch user data after login
-        const userRes = await apiClient.get('/auth/me/');
+        const userRes = await api.getCurrentUser();
         setUser(userRes.data);
         return response.data;
     };
 
     const register = async (userData) => {
-        const response = await apiClient.post('/auth/register/', userData);
+        const response = await api.register(userData);
         return response.data;
     };
 

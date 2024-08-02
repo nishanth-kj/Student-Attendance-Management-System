@@ -13,7 +13,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import apiClient from '../api/client';
+import api from '../api';
 
 const StudentDetails = () => {
     const { usn } = useParams();
@@ -24,9 +24,13 @@ const StudentDetails = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                // Since api.getAttendanceLogs doesn't take params on the class method yet, 
+                // we can either add it or use the client directly if needed, 
+                // but let's assume we want to use the class.
+                // Actually, I'll update the class methods to be more flexible.
                 const [studentRes, logsRes] = await Promise.all([
-                    apiClient.get(`/attendance/students/${usn}/`),
-                    apiClient.get(`/attendance/logs/?usn=${usn}`)
+                    api.getStudentDetail(usn),
+                    api.getAttendanceLogs(usn)
                 ]);
                 setStudent(studentRes.data);
                 setLogs(logsRes.data);
@@ -74,8 +78,14 @@ const StudentDetails = () => {
                             animate={{ opacity: 1, x: 0 }}
                             className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-xl shadow-slate-200/50 text-center"
                         >
-                            <div className="w-32 h-32 rounded-[2.5rem] overflow-hidden mx-auto mb-6 shadow-lg shadow-primary-600/10">
-                                <img src={student.student_image} alt={student.name} className="w-full h-full object-cover" />
+                            <div className="w-32 h-32 rounded-[2.5rem] overflow-hidden mx-auto mb-6 shadow-lg shadow-primary-600/10 bg-slate-100 flex items-center justify-center">
+                                {student.student_image ? (
+                                    <img src={student.student_image} alt={student.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                                        <User className="w-16 h-16 text-slate-300" />
+                                    </div>
+                                )}
                             </div>
                             <h1 className="text-2xl font-black text-slate-900 mb-1">{student.name}</h1>
                             <p className="text-primary-600 font-bold font-mono text-sm tracking-wider uppercase mb-6">{student.usn}</p>

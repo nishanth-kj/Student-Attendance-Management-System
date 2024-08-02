@@ -7,22 +7,33 @@ import {
     UserPlus,
     TrendingUp,
     Calendar,
-    MoreVertical,
-    ArrowUpRight,
     GraduationCap,
     Download,
     CheckCircle,
-    XCircle
+    LayoutDashboard,
+    ArrowUpRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import apiClient from '../api/client';
+import api from '../api';
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    Cell
+} from 'recharts';
 
 const Dashboard = () => {
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [logs, setLogs] = useState([]);
-    const [stats, setStats] = useState({ totalStudents: 0, presentToday: 0 });
+    const [analytics, setAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -30,22 +41,15 @@ const Dashboard = () => {
             try {
                 if (!user) return;
 
-                const responses = await Promise.all([
-                    apiClient.get('/attendance/logs/'),
-                    (user.role === 'ADMIN' || user.role === 'STAFF') ? apiClient.get('/auth/students/') : Promise.resolve({ data: [] })
+                const [logsRes, analyticsRes] = await Promise.all([
+                    api.getAttendanceLogs(),
+                    (user.role === 'ADMIN' || user.role === 'STAFF') ? api.getAnalytics() : Promise.resolve({ data: null })
                 ]);
 
-                const logsData = responses[0].data;
-                const studentsData = responses[1].data;
-
-                setLogs(logsData);
-                setStats({
-                    totalStudents: user.role === 'STUDENT' ? 1 : studentsData.length,
-                    presentToday: logsData.filter(log => {
-                        const today = new Date().toISOString().split('T')[0];
-                        return log.timestamp?.split('T')[0] === today;
-                    }).length
-                });
+                setLogs(logsRes.data);
+                if (analyticsRes.data) {
+                    setAnalytics(analyticsRes.data);
+                }
             } catch (err) {
                 console.error("Failed to fetch dashboard data", err);
             } finally {
@@ -59,182 +63,220 @@ const Dashboard = () => {
         window.open(`${import.meta.env.VITE_API_URL}/attendance/logs/?format=csv`, '_blank');
     };
 
-    if (isLoading) return <div className="min-h-screen flex items-center justify-center font-bold text-slate-400">Loading Portal...</div>;
+    const filteredLogs = logs.filter(log =>
+        log.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        log.usn?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (isLoading) return (
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+            <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full mb-4"
+            />
+            <p className="font-black text-slate-400 uppercase tracking-widest text-sm">Synchronizing Data...</p>
+        </div>
+    );
 
     return (
-        <div className="bg-slate-50 min-h-screen py-10">
+        <div className="bg-mesh min-h-screen py-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* University Branding & Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                {/* Header Card */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="premium-card mb-10 flex flex-col md:flex-row md:items-center justify-between gap-8"
+                >
                     <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-primary-900 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary-900/20">
-                            <GraduationCap size={32} />
+                        <div className="w-20 h-20 bg-slate-900 rounded-[2rem] flex items-center justify-center text-white shadow-2xl overflow-hidden relative group">
+                            <motion.div
+                                className="absolute inset-0 bg-primary-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                initial={false}
+                            />
+                            <GraduationCap size={40} className="relative z-10" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-                                {user?.role === 'STUDENT' ? 'Student Portal' : user?.role === 'STAFF' ? 'Faculty Dashboard' : 'Student Management System'}
-                            </h1>
-                            <p className="text-slate-500 font-medium">Welcome back, {user?.username} • {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            <div className="flex items-center gap-3 mb-1">
+                                <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+                                    {user?.role === 'STUDENT' ? 'Student Portal' : 'Academic Dashboard'}
+                                </h1>
+                                <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-black uppercase tracking-tighter">
+                                    {user?.role}
+                                </span>
+                            </div>
+                            <p className="text-slate-500 font-bold text-lg">
+                                Welcome, {user?.username} <span className="mx-2 text-slate-300">|</span>
+                                <span className="text-primary-600">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                            </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-4">
                         {(user?.role === 'ADMIN' || user?.role === 'STAFF') && (
                             <>
                                 <button
                                     onClick={exportToCSV}
-                                    className="bg-white border-2 border-slate-200 text-slate-700 px-6 py-3 rounded-2xl font-bold flex items-center hover:bg-slate-50 transition-all active:scale-95"
+                                    className="bg-white border-2 border-slate-200 text-slate-700 px-8 py-4 rounded-2xl font-bold flex items-center hover:bg-slate-50 transition-all active:scale-95 text-base shadow-sm"
                                 >
-                                    <Download className="w-5 h-5 mr-2" />
-                                    Export Logs
+                                    <Download className="w-5 h-5 mr-3" />
+                                    Export Records
                                 </button>
                                 <Link
                                     to="/students/add"
-                                    className="bg-primary-900 text-white px-6 py-3 rounded-2xl font-bold flex items-center shadow-lg shadow-primary-900/20 hover:bg-slate-800 transition-all active:scale-95"
+                                    className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold flex items-center shadow-2xl hover:bg-slate-800 transition-all active:scale-95 text-base"
                                 >
-                                    <UserPlus className="w-5 h-5 mr-2" />
-                                    Enroll Student
+                                    <UserPlus className="w-5 h-5 mr-3" />
+                                    New Enrollment
                                 </Link>
                             </>
                         )}
                         {user?.role === 'STUDENT' && (
                             <Link
                                 to="/attendance"
-                                className="bg-primary-900 text-white px-6 py-3 rounded-2xl font-bold flex items-center shadow-lg shadow-primary-900/20 hover:bg-slate-800 transition-all active:scale-95"
+                                className="bg-primary-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center shadow-xl shadow-primary-600/20 hover:bg-primary-500 transition-all active:scale-95 text-base"
                             >
-                                <Clock className="w-5 h-5 mr-2" />
-                                Daily Check-in
+                                <Clock className="w-5 h-5 mr-3" />
+                                Instant Check-in
                             </Link>
                         )}
                     </div>
-                </div>
+                </motion.div>
 
-                {/* Performance Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                    <StatCard
-                        title={user?.role === 'STUDENT' ? 'Attendance Rate' : 'Total Enrollment'}
-                        value={user?.role === 'STUDENT' ? '92%' : stats.totalStudents}
-                        icon={<Users />}
-                        color="bg-blue-600"
-                        trend="+2"
-                    />
-                    <StatCard
-                        title="Today's Attendance"
-                        value={user?.role === 'STUDENT' ? (stats.presentToday > 0 ? 'PRESENT' : 'NOT MARKED') : stats.presentToday}
-                        icon={<Clock />}
-                        color="bg-emerald-600"
-                        trend="+4"
-                    />
-                    <StatCard
-                        title="Average Punctuality"
-                        value="8:45 AM"
-                        icon={<TrendingUp />}
-                        color="bg-violet-600"
-                        trend="-0.5"
-                    />
-                    <StatCard
-                        title="Semester Period"
-                        value="Fall '26"
-                        icon={<Calendar />}
-                        color="bg-orange-600"
-                        trend="0"
-                    />
-                </div>
-
-                {/* Attendance Records Table */}
-                <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
-                    <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <h2 className="text-2xl font-bold text-slate-900">Attendance Log</h2>
-
-                        <div className="relative w-full md:w-96">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="Search records..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 text-slate-900 font-medium focus:outline-none focus:ring-4 focus:ring-primary-600/10 focus:border-primary-600 transition-all"
+                {/* Main Content Grid */}
+                <div className="grid lg:grid-cols-3 gap-8">
+                    {/* Stats & Charts Column */}
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* Summary Stats */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            <StatCard
+                                title="Enrolled Students"
+                                value={analytics?.summary?.total_students || 0}
+                                icon={<Users className="w-6 h-6" />}
+                                color="bg-blue-600"
+                                subtext="Active Profiles"
+                            />
+                            <StatCard
+                                title="Today's Attendance"
+                                value={analytics?.summary?.today_present || 0}
+                                icon={<CheckCircle className="w-6 h-6" />}
+                                color="bg-emerald-600"
+                                subtext={`${analytics?.summary?.attendance_rate?.toFixed(1) || 0}% Engagement`}
+                            />
+                            <StatCard
+                                title="System Uptime"
+                                value="99.9%"
+                                icon={<TrendingUp className="w-6 h-6" />}
+                                color="bg-violet-600"
+                                subtext="Biometric Node Active"
                             />
                         </div>
-                    </div>
 
-                    {/* Responsive List/Table */}
-                    <div className="overflow-x-auto">
-                        {/* Desktop Table */}
-                        <table className="w-full text-left hidden md:table">
-                            <thead>
-                                <tr className="bg-slate-50/50">
-                                    <th className="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Identity</th>
-                                    <th className="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">ID / USN</th>
-                                    <th className="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider">Timestamp</th>
-                                    <th className="px-8 py-5 text-sm font-bold text-slate-500 uppercase tracking-wider text-right">Verification</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {logs.map((log) => (
-                                    <motion.tr
-                                        key={log.id}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="hover:bg-slate-50/80 transition-colors"
-                                    >
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center">
-                                                <div className="w-10 h-10 rounded-full bg-slate-900 mr-3 flex items-center justify-center font-bold text-white uppercase">
-                                                    {log.student_name?.charAt(0)}
-                                                </div>
-                                                <span className="font-bold text-slate-900">{log.student_name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6 font-medium text-slate-600">{log.usn || user?.usn || 'STAFF'}</td>
-                                        <td className="px-8 py-6 font-medium text-slate-600">
-                                            {new Date(log.timestamp).toLocaleString('en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
-                                                <CheckCircle className="w-3 h-3 mr-1" />
-                                                FACE VERIFIED
-                                            </span>
-                                        </td>
-                                    </motion.tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {/* Mobile Card View */}
-                        <div className="md:hidden space-y-4 p-4">
-                            {logs.map((log) => (
-                                <motion.div
-                                    key={log.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="bg-slate-50 p-4 rounded-2xl border border-slate-100"
-                                >
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center">
-                                            <div className="w-10 h-10 rounded-full bg-slate-900 mr-3 flex items-center justify-center font-bold text-white uppercase text-sm">
-                                                {log.student_name?.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-slate-900">{log.student_name}</p>
-                                                <p className="text-xs font-bold text-slate-500">{log.usn || user?.usn}</p>
-                                            </div>
-                                        </div>
-                                        <span className="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wide">
-                                            Verified
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-sm text-slate-500 font-medium pl-14">
-                                        <span>{new Date(log.timestamp).toLocaleDateString()}</span>
-                                        <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
-                                    </div>
-                                </motion.div>
-                            ))}
+                        {/* Attendance Trend Chart */}
+                        <div className="premium-card">
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                                    <BarChart3 className="w-5 h-5 text-primary-600" />
+                                    Attendance Trends
+                                </h3>
+                                <div className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-500">LAST 30 DAYS</div>
+                            </div>
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={analytics?.trends || []}>
+                                        <defs>
+                                            <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                        <XAxis
+                                            dataKey="date"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }}
+                                            dy={10}
+                                        />
+                                        <YAxis
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: '#0f172a',
+                                                border: 'none',
+                                                borderRadius: '16px',
+                                                color: '#fff',
+                                                fontWeight: 800
+                                            }}
+                                            itemStyle={{ color: '#38bdf8' }}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="count"
+                                            stroke="#0ea5e9"
+                                            strokeWidth={4}
+                                            fillOpacity={1}
+                                            fill="url(#colorCount)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="p-8 bg-slate-50/30 border-t border-slate-100 text-center">
-                        <p className="text-slate-400 text-sm font-medium italic">End of recent records. Use export feature for full archival data.</p>
+                    {/* Side Column: Recent Activity */}
+                    <div className="lg:col-span-1">
+                        <div className="premium-card h-full flex flex-col">
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-xl font-black text-slate-900">Recent Logs</h3>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Find..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="bg-slate-100 border-none rounded-xl py-2 pl-9 pr-4 text-sm font-bold focus:ring-2 focus:ring-primary-600 transition-all w-32 focus:w-48"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex-grow space-y-4 overflow-y-auto pr-2 max-h-[600px] custom-scrollbar">
+                                {filteredLogs.map((log, index) => (
+                                    <motion.div
+                                        key={log.id}
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: index * 0.05 }}
+                                        className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-primary-200 hover:bg-white transition-all"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-lg shadow-lg group-hover:bg-primary-600 transition-colors">
+                                                {log.student_name?.charAt(0)}
+                                            </div>
+                                            <div className="flex-grow">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="font-black text-slate-900">{log.student_name}</p>
+                                                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-md uppercase">Verified</span>
+                                                </div>
+                                                <p className="text-xs font-bold text-slate-400 mb-1">{log.usn || 'FACULTY'}</p>
+                                                <div className="flex items-center justify-between text-[10px] font-black text-slate-500 uppercase tracking-tighter">
+                                                    <span>{new Date(log.timestamp).toLocaleDateString()}</span>
+                                                    <span>{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">End of Stream</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -242,20 +284,21 @@ const Dashboard = () => {
     );
 };
 
-const StatCard = ({ title, value, icon, color, trend }) => (
-    <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-        <div className="flex justify-between items-start mb-4">
-            <div className={`${color} p-3 rounded-2xl text-white shadow-lg shadow-current/20`}>
+const StatCard = ({ title, value, icon, color, subtext }) => (
+    <div className="premium-card p-6 !rounded-[2rem]">
+        <div className="flex items-center gap-4 mb-4">
+            <div className={`${color} p-3 rounded-xl text-white shadow-lg`}>
                 {icon}
             </div>
-            <span className={`text-xs font-bold px-2 py-1 rounded-lg ${trend.startsWith('+') ? 'bg-emerald-100 text-emerald-600' : trend === '0' ? 'bg-slate-100 text-slate-600' : 'bg-red-100 text-red-600'
-                }`}>
-                {trend === '0' ? 'STABLE' : `${trend}%`}
-            </span>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
         </div>
-        <p className="text-slate-500 text-sm font-bold uppercase tracking-wider mb-1">{title}</p>
-        <h3 className="text-3xl font-black text-slate-900 tracking-tight">{value}</h3>
+        <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-1">{value}</h3>
+        <p className="text-xs font-bold text-slate-500">{subtext}</p>
     </div>
+);
+
+const BarChart3 = ({ className }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg>
 );
 
 export default Dashboard;

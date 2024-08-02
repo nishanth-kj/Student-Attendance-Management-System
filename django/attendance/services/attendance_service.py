@@ -11,11 +11,14 @@ class AttendanceService:
     @staticmethod
     def log_to_dict(log):
         """Manual serialization for Log model"""
+        full_name = f"{log.user.first_name} {log.user.last_name}".strip()
+        display_name = full_name if full_name else log.user.username
+        
         return {
             'id': log.id,
             'user': log.user.id,
             'username': log.user.username,
-            'student_name': log.user.username, # Or first_name if available
+            'student_name': display_name,
             'usn': log.user.usn,
             'timestamp': log.timestamp.isoformat()
         }
@@ -70,3 +73,30 @@ class AttendanceService:
             logs = Log.objects.all().order_by('-timestamp')
         
         return [AttendanceService.log_to_dict(l) for l in logs]
+
+    @staticmethod
+    def get_analytics():
+        from django.db.models import Count
+        from django.db.models.functions import TruncDate
+        from django.utils import timezone
+        
+        today = timezone.now().date()
+        total_students = User.objects.filter(role='STUDENT').count()
+        today_attendance = Log.objects.filter(timestamp__date=today).values('user').distinct().count()
+        
+        # Monthly trend (last 30 days)
+        last_30_days = timezone.now() - timezone.timedelta(days=30)
+        daily_stats = Log.objects.filter(timestamp__gte=last_30_days) \
+            .annotate(date=TruncDate('timestamp')) \
+            .values('date') \
+            .annotate(count=Count('user', distinct=True)) \
+            .order_by('date')
+        
+        return {
+            'summary': {
+                'total_students': total_students,
+                'today_present': today_attendance,
+                'attendance_rate': (today_attendance / total_students * 100) if total_students > 0 else 0
+            },
+            'trends': list(daily_stats)
+        }

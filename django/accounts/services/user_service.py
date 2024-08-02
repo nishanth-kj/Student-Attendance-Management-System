@@ -14,12 +14,18 @@ class UserService:
             encoded = base64.b64encode(user.image_blob).decode('utf-8')
             image_data = f"data:image/{user.image_format or 'jpeg'};base64,{encoded}"
         
+        # Combine names or fallback to username
+        full_name = f"{user.first_name} {user.last_name}".strip()
+        display_name = full_name if full_name else user.username
+
         return {
             'id': user.id,
             'username': user.username,
+            'name': display_name,
             'email': user.email,
             'role': user.role,
             'usn': user.usn,
+            'student_image': image_data,
             'staff_image': image_data
         }
 

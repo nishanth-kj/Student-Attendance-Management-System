@@ -1,6 +1,10 @@
+import os
+import io
+import base64
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.core.files.base import ContentFile
 from attendance.models import Log
 
 User = get_user_model()
@@ -8,7 +12,7 @@ User = get_user_model()
 class Command(BaseCommand):
     help = 'Seeds the database with initial users and logs'
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS('🌱 Starting database seeding...'))
 
         # 1. Create Admin
@@ -20,6 +24,8 @@ class Command(BaseCommand):
                 role='ADMIN'
             )
             self.stdout.write(self.style.SUCCESS('✅ Admin created (admin / admin123)'))
+        else:
+            self.stdout.write('⏭️ Admin already exists')
 
         # 2. Create Staff
         staff_users = [
@@ -51,7 +57,7 @@ class Command(BaseCommand):
                 )
                 self.stdout.write(self.style.SUCCESS(f"✅ Student created: {data['username']} ({data['usn']})"))
                 
-                # Create some dummy logs
+                # Create some dummy logs for students
                 Log.objects.create(user=user, timestamp=timezone.now() - timezone.timedelta(days=1))
                 Log.objects.create(user=user, timestamp=timezone.now() - timezone.timedelta(hours=2))
                 self.stdout.write(f"   📝 Logs seeded for {data['username']}")

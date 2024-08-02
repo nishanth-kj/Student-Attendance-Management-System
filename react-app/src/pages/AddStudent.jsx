@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, User, IdCard, Upload, Camera, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import apiClient from '../api/client';
+import api from '../api';
 
 const AddStudent = () => {
     const [formData, setFormData] = useState({ name: '', usn: '', image: null });
@@ -32,19 +32,21 @@ const AddStudent = () => {
         }
 
         const payload = {
+            username: formData.usn, // Using USN as username for students
+            password: 'password123', // Default password
             name: formData.name,
             usn: formData.usn,
-            image_input: preview // already contains base64 from reader.readAsDataURL
+            image_input: preview
         };
 
         try {
-            await apiClient.post('/attendance/students/', payload);
+            await api.addStudent(payload);
             setIsSuccess(true);
             setTimeout(() => {
                 navigate('/students');
             }, 2000);
         } catch (err) {
-            setError(err.response?.data?.error || err.response?.data?.message || 'Failed to register student');
+            setError(err || 'Failed to register student');
         }
     };
 

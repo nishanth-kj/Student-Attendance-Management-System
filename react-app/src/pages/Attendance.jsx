@@ -3,7 +3,7 @@ import Webcam from 'react-webcam';
 import { Camera, RefreshCw, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import apiClient from '../api/client';
+import api from '../api';
 
 const Attendance = () => {
     const webcamRef = useRef(null);
@@ -22,12 +22,12 @@ const Attendance = () => {
             const imageSrc = webcamRef.current.getScreenshot();
 
             try {
-                const response = await apiClient.post('/attendance/mark/', { image: imageSrc });
+                const response = await api.markAttendance(imageSrc);
                 setResult('success');
                 setStudentInfo(response.data);
             } catch (err) {
                 setResult('error');
-                setError(err.response?.data?.error || 'No face detected or match found');
+                setError(err || 'No face detected or match found');
             } finally {
                 setIsCapturing(false);
             }

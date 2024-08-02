@@ -1,135 +1,135 @@
-# Student Attendance Management System
+# 🎓 Student Attendance Management System
 
-A modern, full-stack attendance management system with biometric (facial recognition) capabilities. Built with Django REST Framework and React.
+[![CI/CD Pipeline](https://github.com/nishanth-kj/Student-Attendance-Management-System/actions/workflows/main.yml/badge.svg)](https://github.com/nishanth-kj/Student-Attendance-Management-System/actions/workflows/main.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Django](https://img.shields.io/badge/Backend-Django%205.0-092e20?style=flat&logo=django)](https://www.djangoproject.com/)
+[![React](https://img.shields.io/badge/Frontend-React%2018-61dafb?style=flat&logo=react)](https://reactjs.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ed?style=flat&logo=docker)](https://www.docker.com/)
 
-## 🌟 Key Features
+A production-ready Student Attendance Management System featuring **Biometric Facial Recognition**, **Role-Based Access Control (RBAC)**, and **Real-time Analytics**. Designed to replace traditional manual attendance with a secure, automated, and scalable digital solution.
 
-- **Facial Recognition**: Automated attendance marking using dlib and face-recognition libraries.
-- **Role-Based Access Control**: Different dashboards and permissions for Admins, Staff, and Students.
-- **Real-time Analytics**: Dashboard with visual representation of attendance trends.
-- **Student Management**: Full CRUD operations for student records and biometric enrollment.
-- **Secure Authentication**: JWT-based authentication for the frontend.
-- **Reporting**: Detailed attendance logs and history.
-- **Responsive Design**: Mobile-friendly UI built with React and Tailwind CSS.
+---
+
+## ✨ Features
+
+### 👤 User Roles & RBAC
+- **Admin**: Full system control - manage faculty, departments, and system audits.
+- **Faculty/Staff**: Enroll students, manage classes, and generate attendance reports.
+- **Students**: View personal attendance history and real-time check-in status.
+
+### 🤖 Biometric Facial Recognition
+- **Automated Marking**: Uses `dlib` and `face-recognition` to identify faces in milliseconds.
+- **Biometric Enrollment**: Store high-dimensional face embeddings instead of raw images for privacy.
+- **Anti-Spoofing Ready**: Architecture supports integration with liveness detection.
+
+### 📊 Professional Dashboard
+- **Real-time Analytics**: Visual trends for attendance rates and punctuality.
+- **CSV/PDF Export**: Export logs for academic records or compliance.
+- **Mobile Responsive**: Fully functional on tablets and smartphones.
+
+### 🛡️ Secure Infrastructure
+- **JWT Auth**: Stateless authentication with access/refresh token rotation.
+- **API Documentation**: Automated OpenAPI/Swagger specs via `drf-spectacular`.
+- **CI/CD**: Automated testing and Docker build pipelines.
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    A[React Frontend] -->|JWT Auth| B[Django REST API]
+    B --> C[(PostgreSQL/SQLite)]
+    B --> D[OpenCV / Face Recognition Engine]
+    B --> E[Swagger Docs]
+    B --> F[CSV Export Service]
+```
+
+---
 
 ## 🛠️ Tech Stack
 
-### Backend
-- **Framework**: Django 5.0 + Django REST Framework
-- **Database**: PostgreSQL (Production) / SQLite (Development)
-- **Face Recognition**: dlib, face-recognition, OpenCV
-- **Documentation**: Swagger/OpenAPI (drf-spectacular)
-- **Environment**: UV (Python package manager)
+- **Backend**: Python 3.12, Django 5.0, Django REST Framework
+- **Frontend**: React 18, Vite, Tailwind CSS, Framer Motion
+- **Database**: PostgreSQL (Prod) / SQLite (Dev)
+- **Face Recognition**: OpenCV, dlib, face-recognition
+- **DevOps**: Docker, Docker Compose, GitHub Actions, Kubernetes (Manifests included)
 
-### Frontend
-- **Framework**: React 18 (Vite)
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **HTTP Client**: Axios
-- **State Management**: React Context API
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-
 - Python 3.12+
 - Node.js 18+
-- Docker & Docker Compose (optional, for containerized setup)
+- Docker (optional)
 
-### Local Setup (Manual)
-
-#### Backend Setup
-1. Navigate to the django directory:
-   ```bash
-   cd django
-   ```
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv .venv
-   .venv\Scripts\activate  # Windows
-   source .venv/bin/activate  # Linux/Mac
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Run migrations:
-   ```bash
-   python manage.py migrate
-   ```
-5. Start the development server:
-   ```bash
-   python manage.py runserver
-   ```
-
-#### Frontend Setup
-1. Navigate to the react-app directory:
-   ```bash
-   cd react-app
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env` file based on `.env.example`:
-   ```bash
-   VITE_API_URL=http://localhost:8000/api
-   ```
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-### Quick Start with Docker
-
+### Quick Start with Docker (Recommended)
 ```bash
 docker-compose up --build
 ```
-
-### Deployment with Kubernetes
-
-The project includes Kubernetes manifests for orchestrated deployment:
-
-```bash
-# Applying manifests
-kubectl apply -f k8s/base-config.yaml
-kubectl apply -f k8s/db.yaml
-kubectl apply -f k8s/backend.yaml
-kubectl apply -f k8s/frontend.yaml
-```
-
 The application will be available at:
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:8000`
-- API Documentation: `http://localhost:8000/api/docs/`
+- **Frontend**: `http://localhost:5173`
+- **API**: `http://localhost:8000`
+- **Swagger Docs**: `http://localhost:8000/api/docs/`
 
-## 📊 API Documentation
+### Manual Backend Setup
+1. `cd django`
+2. `pip install -r requirements.txt`
+3. `python manage.py migrate`
+4. `python manage.py seed_db` (Optional: Seed initial data)
+5. `python manage.py runserver`
 
-Interative API documentation is available via Swagger UI at `/api/schema/swagger-ui/` when the backend is running.
+### Manual Frontend Setup
+1. `cd react-app`
+2. `npm install`
+3. `npm run dev`
+
+---
+
+## 📖 API Documentation
+
+The API is fully documented using Swagger and Redoc. When the server is running, visit:
+- **Swagger UI**: `/api/docs/`
+- **Redoc**: `/api/redoc/`
+- **JSON Schema**: `/api/schema/`
+
+---
 
 ## 🧪 Testing
 
-### Backend Tests
+### Backend
 ```bash
 cd django
 python manage.py test
 ```
 
-### Frontend Tests
+### Frontend
 ```bash
 cd react-app
 npm test
 ```
 
+---
+
+## 📄 Database Schema
+
+The system uses a custom User model to handle multiple roles and biometric data:
+- **User**: `id`, `username`, `email`, `role` (Admin/Staff/Student), `usn`, `face_embedding`.
+- **Log**: `id`, `user_id` (FK), `timestamp`.
+
+---
+
+## 🛣️ Roadmap
+- [ ] Multi-class / Course scheduling support
+- [ ] Email notifications for absence
+- [ ] Mobile App (Flutter/React Native)
+- [ ] Liveness detection for face recognition
+
+---
+
+## 👥 Contributing
+Contributions are welcome! Please open an issue or submit a pull request.
+
 ## 📄 License
-
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👥 Authors
-
-- **Nishanth KJ** - [GitHub](https://github.com/nishanth-kj)
-
-## 🙏 Acknowledgments
-
-- Face recognition powered by dlib and face_recognition libraries.
-- UI inspiration from modern dashboard designs.
