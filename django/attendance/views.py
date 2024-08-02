@@ -56,7 +56,7 @@ class AttendanceMarkView(APIView):
         image_data = request.data.get('image')
         result = AttendanceService.mark_attendance(image_data)
         
-        if result.get('status') == 'success':
+        if result.get('status') == 1:
             return ApiSuccessResponse(result, "Attendance marked")
         return ApiErrorResponse(result.get('error', 'Match failed'), status_code=result.get('status_code', 400))
 

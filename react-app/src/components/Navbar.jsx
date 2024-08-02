@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Camera, LayoutDashboard, Users, LogIn, LogOut, UserCircle, Menu, X } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = () => {

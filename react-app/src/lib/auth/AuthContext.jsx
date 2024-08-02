@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../api';
+import api from '@/lib/api';
 
 const AuthContext = createContext();
 
@@ -12,10 +12,10 @@ export const AuthProvider = ({ children }) => {
             const token = localStorage.getItem('access_token');
             if (token) {
                 try {
-                    const response = await api.getCurrentUser();
-                    setUser(response.data);
+                    const data = await api.get('/auth/me/');
+                    setUser(data);
                 } catch (err) {
-                    // Token invalid or expired
+                    console.error("Session expired or invalid token");
                 }
             }
             setLoading(false);
@@ -24,20 +24,18 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (username, password) => {
-        const response = await api.login(username, password);
-        const { access, refresh } = response.data;
-        localStorage.setItem('access_token', access);
-        localStorage.setItem('refresh_token', refresh);
+        const data = await api.post('/auth/login/', { username, password });
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
 
-        // Fetch user data after login
-        const userRes = await api.getCurrentUser();
-        setUser(userRes.data);
-        return response.data;
+        // Fetch user data after login using generic get
+        const userData = await api.get('/auth/me/');
+        setUser(userData);
+        return data;
     };
 
     const register = async (userData) => {
-        const response = await api.register(userData);
-        return response.data;
+        return await api.post('/auth/register/', userData);
     };
 
     const logout = () => {

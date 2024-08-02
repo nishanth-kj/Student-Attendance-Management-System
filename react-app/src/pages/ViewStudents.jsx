@@ -10,7 +10,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import api from '../api';
+import api from '@/lib/api';
 
 const ViewStudents = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -20,8 +20,9 @@ const ViewStudents = () => {
     useEffect(() => {
         const fetchStudents = async () => {
             try {
-                const response = await api.getStudents();
-                setStudents(response.data);
+                // Using the generic GET method with the specific endpoint
+                const data = await api.get('/attendance/students/');
+                setStudents(data);
             } catch (err) {
                 console.error("Failed to fetch students", err);
             } finally {

@@ -1,14 +1,18 @@
 from rest_framework.response import Response
 from rest_framework import status
 
+class ApiStatus:
+    SUCCESS = 1
+    ERROR = 0
+
 class ApiResponse(Response):
     """
     Custom standardized API response class.
-    Format: { "success": bool, "data": Any, "message": str, "error": Any }
+    Format: { "status": int (1/0), "data": Any, "message": str, "error": Any }
     """
     def __init__(self, data=None, message=None, success=True, error=None, status_code=status.HTTP_200_OK, **kwargs):
         response_data = {
-            "success": success,
+            "status": ApiStatus.SUCCESS if success else ApiStatus.ERROR,
             "message": message or ("Success" if success else "Error"),
             "data": data,
             "error": error

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Lock, Shield, GraduationCap, Users } from 'lucide-react';
 
@@ -81,8 +81,8 @@ const Signup = () => {
                                         <div
                                             key={r.id}
                                             className={`p-3 rounded-xl border transition-all cursor-pointer ${formData.role === r.id
-                                                    ? 'bg-white/10 border-white/20'
-                                                    : 'border-transparent opacity-40 grayscale'
+                                                ? 'bg-white/10 border-white/20'
+                                                : 'border-transparent opacity-40 grayscale'
                                                 }`}
                                             onClick={() => setFormData({ ...formData, role: r.id })}
                                         >

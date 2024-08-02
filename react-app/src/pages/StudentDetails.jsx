@@ -13,7 +13,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import api from '../api';
+import api from '@/lib/api';
 
 const StudentDetails = () => {
     const { usn } = useParams();
@@ -24,16 +24,12 @@ const StudentDetails = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Since api.getAttendanceLogs doesn't take params on the class method yet, 
-                // we can either add it or use the client directly if needed, 
-                // but let's assume we want to use the class.
-                // Actually, I'll update the class methods to be more flexible.
-                const [studentRes, logsRes] = await Promise.all([
-                    api.getStudentDetail(usn),
-                    api.getAttendanceLogs(usn)
+                const [studentData, logsData] = await Promise.all([
+                    api.get(`/attendance/students/${usn}/`),
+                    api.get(`/attendance/logs/?usn=${usn}`)
                 ]);
-                setStudent(studentRes.data);
-                setLogs(logsRes.data);
+                setStudent(studentData);
+                setLogs(logsData);
             } catch (err) {
                 console.error("Failed to fetch student details", err);
             } finally {

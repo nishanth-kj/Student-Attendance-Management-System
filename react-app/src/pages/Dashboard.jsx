@@ -14,8 +14,8 @@ import {
     ArrowUpRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
-import api from '../api';
+import { useAuth } from '@/lib/auth/AuthContext';
+import api from '@/lib/api';
 import {
     AreaChart,
     Area,
@@ -41,14 +41,14 @@ const Dashboard = () => {
             try {
                 if (!user) return;
 
-                const [logsRes, analyticsRes] = await Promise.all([
-                    api.getAttendanceLogs(),
-                    (user.role === 'ADMIN' || user.role === 'STAFF') ? api.getAnalytics() : Promise.resolve({ data: null })
+                const [logsData, analyticsData] = await Promise.all([
+                    api.get('/attendance/logs/'),
+                    (user.role === 'ADMIN' || user.role === 'STAFF') ? api.get('/attendance/analytics/') : Promise.resolve(null)
                 ]);
 
-                setLogs(logsRes.data);
-                if (analyticsRes.data) {
-                    setAnalytics(analyticsRes.data);
+                setLogs(logsData);
+                if (analyticsData) {
+                    setAnalytics(analyticsData);
                 }
             } catch (err) {
                 console.error("Failed to fetch dashboard data", err);

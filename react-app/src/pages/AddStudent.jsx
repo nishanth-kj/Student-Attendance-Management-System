@@ -2,12 +2,12 @@ import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, User, IdCard, Upload, Camera, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../api';
+import api, { API_STATUS } from '@/lib/api';
 
 const AddStudent = () => {
     const [formData, setFormData] = useState({ name: '', usn: '', image: null });
     const [preview, setPreview] = useState(null);
-    const [isSuccess, setIsSuccess] = useState(false);
+    const [status, setStatus] = useState(null); // null | API_STATUS.SUCCESS
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
@@ -40,8 +40,8 @@ const AddStudent = () => {
         };
 
         try {
-            await api.addStudent(payload);
-            setIsSuccess(true);
+            await api.post('/attendance/students/', payload);
+            setStatus(API_STATUS.SUCCESS);
             setTimeout(() => {
                 navigate('/students');
             }, 2000);
@@ -144,7 +144,7 @@ const AddStudent = () => {
             </div>
 
             <AnimatePresence>
-                {isSuccess && (
+                {status === API_STATUS.SUCCESS && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.5 }}
                         animate={{ opacity: 1, scale: 1 }}

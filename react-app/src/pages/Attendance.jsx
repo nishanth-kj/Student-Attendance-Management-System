@@ -3,12 +3,13 @@ import Webcam from 'react-webcam';
 import { Camera, RefreshCw, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../api';
+import api from '@/lib/api';
+import { API_STATUS } from '@/constants';
 
 const Attendance = () => {
     const webcamRef = useRef(null);
     const [isCapturing, setIsCapturing] = useState(false);
-    const [result, setResult] = useState(null); // 'success' | 'error' | 'no_match'
+    const [result, setResult] = useState(null); // API_STATUS.SUCCESS | API_STATUS.ERROR
     const [studentInfo, setStudentInfo] = useState(null);
     const [error, setError] = useState('');
 
@@ -22,11 +23,12 @@ const Attendance = () => {
             const imageSrc = webcamRef.current.getScreenshot();
 
             try {
-                const response = await api.markAttendance(imageSrc);
-                setResult('success');
-                setStudentInfo(response.data);
+                // Using generic POST for marking attendance
+                const data = await api.post('/attendance/mark/', { image: imageSrc });
+                setResult(API_STATUS.SUCCESS);
+                setStudentInfo(data);
             } catch (err) {
-                setResult('error');
+                setResult(API_STATUS.ERROR);
                 setError(err || 'No face detected or match found');
             } finally {
                 setIsCapturing(false);
@@ -82,7 +84,7 @@ const Attendance = () => {
 
                         {/* Results Overlay */}
                         <AnimatePresence>
-                            {result === 'success' && (
+                            {result === API_STATUS.SUCCESS && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -99,7 +101,7 @@ const Attendance = () => {
                                     </div>
                                 </motion.div>
                             )}
-                            {result === 'error' && (
+                            {result === API_STATUS.ERROR && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
