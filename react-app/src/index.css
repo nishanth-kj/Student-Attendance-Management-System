@@ -1,0 +1,59 @@
+<<<<<<< HEAD
+@import "tailwindcss";
+
+@theme {
+  /* Restored and Enhanced Sky/Ocean Blue Palette */
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-200: #bae6fd;
+  --color-primary-300: #7dd3fc;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+  --color-primary-800: #075985;
+  --color-primary-900: #0c4a6e;
+  --color-primary-950: #082f49;
+
+  /* Vibrant Accent */
+  --color-accent: #10b981; /* Emerald for a fresh look */
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased selection:bg-primary-100 selection:text-primary-700;
+  }
+}
+
+/* Custom Utilities */
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-xl bg-white/80 border border-white/30;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400;
+  }
+
+  .text-uniform {
+    @apply text-slate-900;
+  }
+
+  .shadow-premium {
+    @apply shadow-[0_20px_50px_rgba(2,132,199,0.1)];
+  }
+=======
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+>>>>>>> 602157e (react init)
+}
