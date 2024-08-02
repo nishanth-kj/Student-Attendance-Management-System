@@ -1,17 +1,14 @@
 from django.contrib import admin
-from django.urls import path
-from attendance.views import *
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', index_view, name='index'),
-    path('login/', login_view, name='login'),
-    path('attendance/', attendance_view, name='attendance'),
-    path('dash/', dash_view, name='dash'),
-    path('add/', add_view, name='add'),
-    path('mark_attendance/', mark_attendance, name='mark_attendance'),
-    path('view_students/', view_students, name='view_students'),
-    path('student/<str:usn>/', student_details_view, name='student_details'),
-    path('student/<str:usn>/delete/', delete_student_view, name='delete_student'),
-    path('details/', details_view, name='details'),  # Ensure this line is added
+    path('auth/', include('accounts.urls')),
+    path('attendance/', include('attendance.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
