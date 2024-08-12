@@ -1,200 +1,118 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/lib/auth/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Lock, Shield, GraduationCap, Users } from 'lucide-react';
+import api from '@/lib/api';
 
 const Signup = () => {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         username: '',
         email: '',
         password: '',
-        confirmPassword: '',
-        role: 'STAFF', // Default to STAFF
-        usn: ''
+        role: 'STAFF',
     });
     const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const navigate = useNavigate();
-    const { register, login } = useAuth();
+    const [loading, setLoading] = useState(false);
 
-    const roles = [
-        { id: 'ADMIN', label: 'Admin', icon: Shield, desc: 'Full System Access' },
-        { id: 'STAFF', label: 'Faculty', icon: Users, desc: 'Manage Attendance' },
-        { id: 'STUDENT', label: 'Student', icon: GraduationCap, desc: 'Personal Dashboard' },
-    ];
-
-    const handleSignup = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-
-        if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
-            return;
-        }
-
-        if (formData.role === 'STUDENT' && !formData.usn) {
-            setError('USN is required for students');
-            return;
-        }
-
-        setIsLoading(true);
+        setLoading(true);
         try {
-            await register({
-                username: formData.username,
-                email: formData.email,
-                password: formData.password,
-                role: formData.role,
-                usn: formData.role === 'STUDENT' ? formData.usn : undefined
-            });
-
-            // Auto-login after signup
-            await login(formData.username, formData.password);
-            navigate('/dashboard');
+            await api.post('/accounts/register/', formData);
+            navigate('/login');
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to create account');
+            setError(err || 'Registration failed');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen pt-24 pb-12 flex items-center justify-center px-4 bg-slate-50">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-2xl"
-            >
-                <div className="bg-white rounded-[2rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-                    <div className="flex flex-col md:flex-row">
-                        {/* Sidebar / Info */}
-                        <div className="w-full md:w-72 bg-slate-900 p-8 text-white flex flex-col justify-between">
-                            <div>
-                                <h2 className="text-3xl font-black mb-4">Join Us.</h2>
-                                <p className="text-slate-400 font-medium text-sm leading-relaxed">
-                                    Create an account to access the advanced biometric attendance system.
-                                </p>
-                            </div>
-                            <div className="hidden md:block">
-                                <div className="space-y-4">
-                                    {roles.map((r) => (
-                                        <div
-                                            key={r.id}
-                                            className={`p-3 rounded-xl border transition-all cursor-pointer ${formData.role === r.id
-                                                ? 'bg-white/10 border-white/20'
-                                                : 'border-transparent opacity-40 grayscale'
-                                                }`}
-                                            onClick={() => setFormData({ ...formData, role: r.id })}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <r.icon size={18} />
-                                                <span className="font-bold text-xs uppercase tracking-wider">{r.label}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+        <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 p-4">
+            <div className="w-full max-w-sm bg-white p-6 rounded shadow border border-gray-200">
+                <h2 className="text-xl font-semibold text-center mb-6 text-gray-800">Create Account</h2>
 
-                        {/* Form */}
-                        <div className="flex-1 p-8 md:p-12">
-                            <form onSubmit={handleSignup} className="space-y-5">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div className="relative">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input
-                                            type="text"
-                                            placeholder="Username"
-                                            value={formData.username}
-                                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all font-bold"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="relative">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input
-                                            type="email"
-                                            placeholder="Email"
-                                            value={formData.email}
-                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all font-bold"
-                                            required
-                                        />
-                                    </div>
-                                </div>
+                {error && (
+                    <div className="mb-4 text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200 text-center">
+                        {error}
+                    </div>
+                )}
 
-                                <AnimatePresence mode="wait">
-                                    {formData.role === 'STUDENT' && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            className="relative overflow-hidden"
-                                        >
-                                            <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                            <input
-                                                type="text"
-                                                placeholder="USN (e.g. 1RV19CS001)"
-                                                value={formData.usn}
-                                                onChange={(e) => setFormData({ ...formData, usn: e.target.value })}
-                                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all font-bold"
-                                                required
-                                            />
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div className="relative">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input
-                                            type="password"
-                                            placeholder="Password"
-                                            value={formData.password}
-                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all font-bold"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="relative">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input
-                                            type="password"
-                                            placeholder="Confirm"
-                                            value={formData.confirmPassword}
-                                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all font-bold"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {error && (
-                                    <p className="text-red-500 text-sm font-bold text-center bg-red-50 py-2 rounded-xl">{error}</p>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-lg hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 shadow-xl shadow-slate-900/20"
-                                >
-                                    {isLoading ? 'Creating Account...' : 'Get Started'}
-                                </button>
-
-                                <div className="text-center mt-6">
-                                    <p className="text-slate-500 font-medium">
-                                        Already have an account? {' '}
-                                        <Link to="/login" className="text-slate-900 font-black hover:underline">
-                                            Log In
-                                        </Link>
-                                    </p>
-                                </div>
-                            </form>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Role Selection */}
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Select Role</label>
+                        <div className="flex rounded shadow-sm">
+                            {['ADMIN', 'STAFF'].map((role, idx) => {
+                                const isSelected = formData.role === role;
+                                return (
+                                    <button
+                                        key={role}
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, role })}
+                                        className={`flex-1 py-1.5 text-xs font-medium border ${isSelected
+                                                ? 'bg-blue-600 text-white border-blue-600 z-10'
+                                                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                                            } ${idx === 0 ? 'rounded-l' : 'rounded-r'} focus:outline-none`}
+                                    >
+                                        {role}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
-                </div>
-            </motion.div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Username</label>
+                        <input
+                            type="text"
+                            required
+                            placeholder="DataEnterr01"
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
+                            value={formData.username}
+                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Email Address</label>
+                        <input
+                            type="email"
+                            required
+                            placeholder="user@example.com"
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Password</label>
+                        <input
+                            type="password"
+                            required
+                            placeholder="••••••••"
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-2 mt-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                        {loading ? 'Creating Account...' : 'Sign Up'}
+                    </button>
+
+                    <div className="text-center mt-4">
+                        <Link to="/login" className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                            Already have an account? Sign In
+                        </Link>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };

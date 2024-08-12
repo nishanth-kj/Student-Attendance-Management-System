@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
         // Fetch user data after login using generic get
         const userData = await api.get('/auth/me/');
         setUser(userData);
-        return data;
+        return userData;
     };
 
     const register = async (userData) => {

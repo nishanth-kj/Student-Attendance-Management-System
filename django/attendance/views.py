@@ -2,42 +2,39 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from accounts.permissions import IsStaffUser
 from accounts.services import UserService
 from .services import AttendanceService
-import csv
-from django.http import HttpResponse
+from .permissions import IsStaff, IsStaffOrReadOnly, IsAdmin
 from config.utils import ApiSuccessResponse, ApiErrorResponse
 
 class StudentListView(APIView):
-    permission_classes = [IsStaffUser]
+    permission_classes = [IsStaff]
 
     def get(self, request):
-        students = UserService.get_student_list()
-        return ApiSuccessResponse(students)
+        result = UserService.get_student_list()
+        return ApiSuccessResponse(result.data)
 
     def post(self, request):
-        try:
-            user_data = UserService.create_user(
-                username=request.data.get('username'),
-                password=request.data.get('password'),
-                email=request.data.get('email', ''),
-                role='STUDENT',
-                usn=request.data.get('usn'),
-                image_input=request.data.get('image_input')
-            )
-            return ApiSuccessResponse(user_data, "Student enrolled successfully", status.HTTP_201_CREATED)
-        except Exception as e:
-            return ApiErrorResponse(str(e))
+        result = UserService.create_user(
+            username=request.data.get('username'),
+            password=request.data.get('password'),
+            email=request.data.get('email', ''),
+            role='STUDENT',
+            usn=request.data.get('usn'),
+            image_input=request.data.get('image_input')
+        )
+        if result.is_success:
+            return ApiSuccessResponse(result.data, result.message, status.HTTP_201_CREATED)
+        return ApiErrorResponse(result.error, result.message, status_code=result.status_code)
 
 class StudentDetailView(APIView):
-    permission_classes = [IsStaffUser]
+    permission_classes = [IsStaff]
 
     def get(self, request, usn):
-        student_data = UserService.get_student_by_usn(usn)
-        if student_data:
-            return ApiSuccessResponse(student_data)
-        return ApiErrorResponse("Student not found", status_code=status.HTTP_404_NOT_FOUND)
+        result = UserService.get_student_by_usn(usn)
+        if result.is_success:
+            return ApiSuccessResponse(result.data)
+        return ApiErrorResponse(result.error, status_code=result.status_code)
 
     def delete(self, request, usn):
         try:
@@ -56,21 +53,28 @@ class AttendanceMarkView(APIView):
         image_data = request.data.get('image')
         result = AttendanceService.mark_attendance(image_data)
         
-        if result.get('status') == 1:
-            return ApiSuccessResponse(result, "Attendance marked")
-        return ApiErrorResponse(result.get('error', 'Match failed'), status_code=result.get('status_code', 400))
+        if result.is_success:
+            return ApiSuccessResponse(result.data, result.message)
+        return ApiErrorResponse(result.error, status_code=result.status_code)
 
 class AttendanceLogView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         if request.user.role == 'STUDENT':
-            logs = AttendanceService.get_logs(usn=request.user.usn)
+            result = AttendanceService.get_logs(usn=request.user.usn)
         else:
             usn = request.query_params.get('usn')
-            logs = AttendanceService.get_logs(usn)
+            result = AttendanceService.get_logs(usn)
+        
+        if not result.is_success:
+            return ApiErrorResponse(result.error, status_code=result.status_code)
+            
+        logs = result.data
         
         if request.query_params.get('format') == 'csv':
+            from django.http import HttpResponse
+            import csv
             response = HttpResponse(content_type='text/csv')
             response['Content-Disposition'] = 'attachment; filename="attendance_report.csv"'
             
@@ -83,8 +87,10 @@ class AttendanceLogView(APIView):
         return ApiSuccessResponse(logs)
 
 class AttendanceAnalyticsView(APIView):
-    permission_classes = [IsStaffUser]
+    permission_classes = [IsStaff]
 
     def get(self, request):
-        analytics = AttendanceService.get_analytics()
-        return ApiSuccessResponse(analytics)
+        result = AttendanceService.get_analytics()
+        if result.is_success:
+            return ApiSuccessResponse(result.data)
+        return ApiErrorResponse(result.error)

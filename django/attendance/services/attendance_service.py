@@ -1,13 +1,12 @@
 import numpy as np
-import cv2
-import face_recognition
 from django.contrib.auth import get_user_model
 from attendance.models import Log
-from attendance.utils import decode_base64_image
+from attendance.services.biometric_service import BiometricService
+from config.utils.services import BaseService
 
 User = get_user_model()
 
-class AttendanceService:
+class AttendanceService(BaseService):
     @staticmethod
     def log_to_dict(log):
         """Manual serialization for Log model"""
@@ -23,60 +22,43 @@ class AttendanceService:
             'timestamp': log.timestamp.isoformat()
         }
 
-    @staticmethod
-    def mark_attendance(image_data):
+    @classmethod
+    def mark_attendance(cls, image_data):
         if not image_data:
-            return {'status': 0, 'error': 'No image data provided', 'status_code': 400}
+            return cls.failure("No image data provided")
 
-        frame = decode_base64_image(image_data)
-        if frame is None:
-            return {'status': 0, 'error': 'Invalid image data', 'status_code': 400}
+        # 1. Extract Encoding using BiometricService
+        encoding = BiometricService.extract_encoding(image_data)
+        if encoding is None:
+            return cls.failure("No face detected or invalid image")
 
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        face_locations = face_recognition.face_locations(rgb_frame)
-        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+        # 2. Identify User using BiometricService
+        users = User.objects.filter(role='STUDENT').exclude(face_embedding__isnull=True)
+        user = BiometricService.identify_user(encoding, users)
 
-        if not face_encodings:
-            return {'status': 0, 'error': 'No face detected', 'status_code': 400}
+        if user:
+            Log.objects.create(user=user)
+            data = {
+                'username': user.username,
+                'usn': user.usn,
+                'role': user.role,
+                'name': f"{user.first_name} {user.last_name}".strip() or user.username,
+            }
+            return cls.success(data, f'Attendance marked for {user.username}')
 
-        live_encoding = face_encodings[0]
-        users = User.objects.exclude(face_embedding__isnull=True)
-        known_encodings = [np.frombuffer(u.face_embedding, dtype=np.float64) for u in users]
-        
-        if not known_encodings:
-            return {'status': 0, 'error': 'No registered users with face data', 'status_code': 400}
+        return cls.failure("No match found", status_code=404)
 
-        matches = face_recognition.compare_faces(known_encodings, live_encoding)
-        face_distances = face_recognition.face_distance(known_encodings, live_encoding)
-        
-        if any(matches):
-            best_match_index = np.argmin(face_distances)
-            if matches[best_match_index]:
-                user = list(users)[best_match_index]
-                Log.objects.create(user=user)
-                return {
-                    'status': 1,
-                    'username': user.username,
-                    'usn': user.usn if hasattr(user, 'usn') else 'N/A',
-                    'role': user.role,
-                    'name': f"{user.first_name} {user.last_name}".strip() or user.username,
-                    'message': f'Attendance marked for {user.username}',
-                    'status_code': 200
-                }
-
-        return {'status': 0, 'error': 'No match found', 'status_code': 404}
-
-    @staticmethod
-    def get_logs(usn=None):
+    @classmethod
+    def get_logs(cls, usn=None):
         if usn:
             logs = Log.objects.filter(user__usn=usn).order_by('-timestamp')
         else:
             logs = Log.objects.all().order_by('-timestamp')
         
-        return [AttendanceService.log_to_dict(l) for l in logs]
+        return cls.success([cls.log_to_dict(l) for l in logs])
 
-    @staticmethod
-    def get_analytics():
+    @classmethod
+    def get_analytics(cls):
         from django.db.models import Count
         from django.db.models.functions import TruncDate
         from django.utils import timezone
@@ -93,7 +75,7 @@ class AttendanceService:
             .annotate(count=Count('user', distinct=True)) \
             .order_by('date')
         
-        return {
+        data = {
             'summary': {
                 'total_students': total_students,
                 'today_present': today_attendance,
@@ -101,3 +83,4 @@ class AttendanceService:
             },
             'trends': list(daily_stats)
         }
+        return cls.success(data)

@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'attendance',
     'accounts',
+    'academic_structure',
 ]
 
 MIDDLEWARE = [

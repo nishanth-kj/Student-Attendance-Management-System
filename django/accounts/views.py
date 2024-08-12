@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .permissions import IsAdminUser, IsStaffUser
+from attendance.permissions import IsAdmin, IsStaff
 from .services import UserService, AuthService
 from config.utils import ApiSuccessResponse, ApiErrorResponse
 
@@ -10,17 +10,16 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        try:
-            user_data = UserService.create_user(
-                username=request.data.get('username'),
-                password=request.data.get('password'),
-                email=request.data.get('email', ''),
-                role=request.data.get('role', 'STAFF'),
-                usn=request.data.get('usn')
-            )
-            return ApiSuccessResponse(user_data, "Account created successfully", status.HTTP_201_CREATED)
-        except Exception as e:
-            return ApiErrorResponse(str(e), "Registration failed")
+        result = UserService.create_user(
+            username=request.data.get('username'),
+            password=request.data.get('password'),
+            email=request.data.get('email', ''),
+            role=request.data.get('role', 'STAFF'),
+            usn=request.data.get('usn')
+        )
+        if result.is_success:
+            return ApiSuccessResponse(result.data, result.message, status.HTTP_201_CREATED)
+        return ApiErrorResponse(result.error, result.message, status_code=result.status_code)
 
 class DemoView(APIView):
     permission_classes = [AllowAny]
@@ -62,9 +61,9 @@ class LoginView(APIView):
         password = request.data.get('password')
         
         result = AuthService.login_user(username, password)
-        if result:
-            return ApiSuccessResponse(result, "Login successful")
-        return ApiErrorResponse("Invalid credentials", status_code=status.HTTP_401_UNAUTHORIZED)
+        if result.is_success:
+            return ApiSuccessResponse(result.data, result.message)
+        return ApiErrorResponse(result.error, status_code=result.status_code)
 
 class UserInfoView(APIView):
     permission_classes = [IsAuthenticated]
@@ -74,70 +73,59 @@ class UserInfoView(APIView):
         return ApiSuccessResponse(user_data)
 
 class StaffListCreateView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
     def get(self, request):
-        staff = UserService.get_staff_list()
-        return ApiSuccessResponse(staff)
+        result = UserService.get_staff_list()
+        return ApiSuccessResponse(result.data)
 
     def post(self, request):
-        try:
-            user_data = UserService.create_user(
-                username=request.data.get('username'),
-                password=request.data.get('password'),
-                email=request.data.get('email', ''),
-                role='STAFF',
-                image_input=request.data.get('image_input')
-            )
-            return ApiSuccessResponse(user_data, "Staff member created", status.HTTP_201_CREATED)
-        except Exception as e:
-            return ApiErrorResponse(str(e))
+        result = UserService.create_user(
+            username=request.data.get('username'),
+            password=request.data.get('password'),
+            email=request.data.get('email', ''),
+            role='STAFF',
+            image_input=request.data.get('image_input')
+        )
+        if result.is_success:
+            return ApiSuccessResponse(result.data, result.message, status.HTTP_201_CREATED)
+        return ApiErrorResponse(result.error, status_code=result.status_code)
 
 class StudentListCreateView(APIView):
-    permission_classes = [IsStaffUser]
+    permission_classes = [IsStaff]
 
     def get(self, request):
-        students = UserService.get_student_list()
-        return ApiSuccessResponse(students)
+        result = UserService.get_student_list()
+        return ApiSuccessResponse(result.data)
 
     def post(self, request):
-        try:
-            user_data = UserService.create_user(
-                username=request.data.get('username'),
-                password=request.data.get('password'),
-                email=request.data.get('email', ''),
-                role='STUDENT',
-                usn=request.data.get('usn'),
-                image_input=request.data.get('image_input')
-            )
-            return ApiSuccessResponse(user_data, "Student enrolled successfully", status.HTTP_201_CREATED)
-        except Exception as e:
-            return ApiErrorResponse(str(e))
+        result = UserService.create_user(
+            username=request.data.get('username'),
+            password=request.data.get('password'),
+            email=request.data.get('email', ''),
+            role='STUDENT',
+            usn=request.data.get('usn'),
+            image_input=request.data.get('image_input')
+        )
+        if result.is_success:
+            return ApiSuccessResponse(result.data, result.message, status.HTTP_201_CREATED)
+        return ApiErrorResponse(result.error, status_code=result.status_code)
 
 class UserDetailView(APIView):
-    permission_classes = [IsStaffUser]
+    permission_classes = [IsStaff]
 
     def get(self, request, pk):
-        try:
-            user_data = UserService.get_user_detail(pk)
-            if not user_data:
-                return ApiErrorResponse("User not found", status_code=status.HTTP_404_NOT_FOUND)
-            
-            if request.user.role == 'ADMIN' or (request.user.role == 'STAFF' and user_data['role'] == 'STUDENT'):
-                return ApiSuccessResponse(user_data)
-            return ApiErrorResponse("Unauthorized", status_code=status.HTTP_403_FORBIDDEN)
-        except Exception as e:
-            return ApiErrorResponse(str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        result = UserService.get_user_detail(pk)
+        if not result.is_success:
+            return ApiErrorResponse(result.error, status_code=result.status_code)
+        
+        user_data = result.data
+        if request.user.role == 'ADMIN' or (request.user.role == 'STAFF' and user_data['role'] == 'STUDENT'):
+            return ApiSuccessResponse(user_data)
+        return ApiErrorResponse("Unauthorized", status_code=status.HTTP_403_FORBIDDEN)
 
     def delete(self, request, pk):
-        try:
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            user_obj = User.objects.get(pk=pk)
-            
-            if request.user.role == 'ADMIN' or (request.user.role == 'STAFF' and user_obj.role == 'STUDENT'):
-                user_obj.delete()
-                return ApiSuccessResponse(None, "User deleted", status_code=status.HTTP_204_NO_CONTENT)
-            return ApiErrorResponse("Unauthorized", status_code=status.HTTP_403_FORBIDDEN)
-        except User.DoesNotExist:
-            return ApiErrorResponse("User not found", status_code=status.HTTP_404_NOT_FOUND)
+        result = UserService.delete_user(pk)
+        if result.is_success:
+             return ApiSuccessResponse(None, result.message, status_code=status.HTTP_204_NO_CONTENT)
+        return ApiErrorResponse(result.error, status_code=result.status_code)

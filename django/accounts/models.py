@@ -25,6 +25,15 @@ class User(AbstractUser):
     image_format = models.CharField(max_length=10, null=True, blank=True)
     face_embedding = models.BinaryField(null=True, blank=True)
     
+    # Academic Info
+    department = models.ForeignKey(
+        'academic_structure.Department', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='users'
+    )
+    
     def is_admin(self):
         return self.role == self.ADMIN or self.is_superuser
 

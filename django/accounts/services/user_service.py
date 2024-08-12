@@ -1,11 +1,12 @@
 import base64
 import io
 from django.contrib.auth import get_user_model
-from attendance.utils import get_face_encoding
+from config.utils.services import BaseService
+from attendance.services.biometric_service import BiometricService
 
 User = get_user_model()
 
-class UserService:
+class UserService(BaseService):
     @staticmethod
     def user_to_dict(user):
         """Manual serialization for User model"""
@@ -14,7 +15,6 @@ class UserService:
             encoded = base64.b64encode(user.image_blob).decode('utf-8')
             image_data = f"data:image/{user.image_format or 'jpeg'};base64,{encoded}"
         
-        # Combine names or fallback to username
         full_name = f"{user.first_name} {user.last_name}".strip()
         display_name = full_name if full_name else user.username
 
@@ -25,73 +25,77 @@ class UserService:
             'email': user.email,
             'role': user.role,
             'usn': user.usn,
-            'student_image': image_data,
-            'staff_image': image_data
+            'image_url': image_data
         }
 
-    @staticmethod
-    def create_user(username, password, email='', role=User.STAFF, usn=None, image_input=None):
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password,
-            role=role,
-            usn=usn
-        )
-        
-        if image_input:
-            UserService.update_user_biometrics(user, image_input)
+    @classmethod
+    def create_user(cls, username, password, email='', role=User.STAFF, usn=None, image_input=None):
+        try:
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                role=role,
+                usn=usn
+            )
             
-        return UserService.user_to_dict(user)
+            if image_input:
+                cls.update_user_biometrics(user, image_input)
+                
+            return cls.success(cls.user_to_dict(user), "User created successfully", status_code=201)
+        except Exception as e:
+            return cls.failure(str(e), "Failed to create user")
 
     @staticmethod
     def update_user_biometrics(user, image_input):
-        if 'base64,' in image_input:
-            format, imgstr = image_input.split(';base64,')
-            ext = format.split('/')[-1]
+        """
+        Updates user's saved image and biometric face embedding.
+        """
+        if isinstance(image_input, str) and 'base64,' in image_input:
+            format_part, imgstr = image_input.split(';base64,')
+            ext = format_part.split('/')[-1]
             user.image_blob = base64.b64decode(imgstr)
             user.image_format = ext
             
-            # Extract face embedding
-            image_file = io.BytesIO(user.image_blob)
-            encoding = get_face_encoding(image_file)
+            # Use BiometricService for face extraction
+            encoding = BiometricService.extract_encoding(user.image_blob)
             if encoding is not None:
                 user.face_embedding = encoding.tobytes()
             
             user.save()
         return user
 
-    @staticmethod
-    def get_staff_list():
+    @classmethod
+    def get_staff_list(cls):
         staff = User.objects.filter(role=User.STAFF)
-        return [UserService.user_to_dict(u) for u in staff]
+        return cls.success([cls.user_to_dict(u) for u in staff])
 
-    @staticmethod
-    def get_student_list():
+    @classmethod
+    def get_student_list(cls):
         students = User.objects.filter(role=User.STUDENT)
-        return [UserService.user_to_dict(u) for u in students]
+        return cls.success([cls.user_to_dict(u) for u in students])
 
-    @staticmethod
-    def get_user_detail(pk):
+    @classmethod
+    def get_user_detail(cls, pk):
         try:
             user = User.objects.get(pk=pk)
-            return UserService.user_to_dict(user)
+            return cls.success(cls.user_to_dict(user))
         except User.DoesNotExist:
-            return None
+            return cls.failure("User not found", status_code=404)
 
-    @staticmethod
-    def get_student_by_usn(usn):
+    @classmethod
+    def get_student_by_usn(cls, usn):
         try:
             user = User.objects.get(usn=usn, role=User.STUDENT)
-            return UserService.user_to_dict(user)
+            return cls.success(cls.user_to_dict(user))
         except User.DoesNotExist:
-            return None
+            return cls.failure("Student not found", status_code=404)
 
-    @staticmethod
-    def delete_user(user_id):
+    @classmethod
+    def delete_user(cls, user_id):
         try:
             user = User.objects.get(pk=user_id)
             user.delete()
-            return True
+            return cls.success(None, "User deleted")
         except User.DoesNotExist:
-            return False
+            return cls.failure("User not found", status_code=404)

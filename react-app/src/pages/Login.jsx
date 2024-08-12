@@ -1,121 +1,130 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { motion } from 'framer-motion';
 
 const Login = () => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const navigate = useNavigate();
     const { login } = useAuth();
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({ username: '', password: '' });
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
         setError('');
-
+        setLoading(true);
         try {
-            await login(username, password);
-            navigate('/dashboard');
+            const user = await login(formData.username, formData.password);
+            if (user?.role === 'ADMIN') {
+                navigate('/admin-dashboard');
+            } else if (user?.role === 'STUDENT') {
+                navigate('/student-dashboard');
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err) {
-            setError(err.response?.data?.error || 'Invalid credentials');
+            setError(err || 'Invalid credentials');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
+    const fillDemo = (username, password) => {
+        setFormData({ username, password });
+    };
+
     return (
-        <div className="min-h-[calc(100vh-160px)] flex items-center justify-center bg-white px-4">
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-sm"
-            >
+        <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 p-4">
+            <div className="w-full max-w-sm bg-white p-8 rounded shadow-sm border border-gray-200">
                 <div className="text-center mb-8">
-                    <h2 className="text-3xl font-black text-slate-900 mb-2">Login</h2>
-                    <p className="text-slate-500 font-medium">Access your administration panel</p>
+                    <h2 className="text-2xl font-semibold text-gray-800">Welcome Back</h2>
+                    <p className="text-sm text-gray-500 mt-1">Please sign in to continue</p>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-4">
+                {error && (
+                    <div className="mb-6 text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200 text-center">
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
+                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">
+                            Username
+                        </label>
                         <input
                             type="text"
-                            placeholder="Username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all font-bold"
+                            placeholder="Enter your username"
                             required
-                        />
-                    </div>
-                    <div>
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all font-bold"
-                            required
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-gray-400"
+                            value={formData.username}
+                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                         />
                     </div>
 
-                    {error && (
-                        <p className="text-red-500 text-sm font-bold text-center">{error}</p>
-                    )}
+                    <div>
+                        <div className="flex justify-between items-center mb-1.5">
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide">
+                                Password
+                            </label>
+                        </div>
+                        <input
+                            type="password"
+                            placeholder="••••••••"
+                            required
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-gray-400"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        />
+                    </div>
 
                     <button
                         type="submit"
-                        disabled={isLoading}
-                        className="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-lg hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
+                        disabled={loading}
+                        className="w-full py-2.5 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/20 transition-all disabled:opacity-70 text-sm"
                     >
-                        {isLoading ? 'Signing In...' : 'Sign In'}
+                        {loading ? 'Signing in...' : 'Sign In'}
                     </button>
 
-                    <div className="mt-8">
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest text-center mb-4">Quick Access Demo</p>
-                        <div className="grid grid-cols-1 gap-3">
-                            <DemoCredentialItem
-                                role="Admin"
-                                user="admin"
-                                pass="admin123"
-                                onClick={() => { setUsername('admin'); setPassword('admin123'); }}
-                            />
-                            <DemoCredentialItem
-                                role="Faculty"
-                                user="prof_jane"
-                                pass="password123"
-                                onClick={() => { setUsername('prof_jane'); setPassword('password123'); }}
-                            />
-                            <DemoCredentialItem
-                                role="Student"
-                                user="student_1"
-                                pass="password123"
-                                onClick={() => { setUsername('student_1'); setPassword('password123'); }}
-                            />
+                    <div className="text-center mt-6">
+                        <Link to="/signup" className="text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                            First time here? <span className="underline decoration-gray-300 hover:decoration-blue-600">Create an account</span>
+                        </Link>
+                    </div>
+
+                    {/* Demo Accounts */}
+                    <div className="mt-8 pt-6 border-t border-gray-100">
+                        <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-wider mb-3">
+                            Click to Auto-Fill Demo
+                        </p>
+                        <div className="flex justify-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => fillDemo('admin', 'admin')}
+                                className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors"
+                            >
+                                Admin
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => fillDemo('staff_user', 'staff123')}
+                                className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors"
+                            >
+                                Staff
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => fillDemo('student_user', 'student123')}
+                                className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors"
+                            >
+                                User
+                            </button>
                         </div>
                     </div>
                 </form>
-            </motion.div>
+            </div>
         </div>
     );
 };
-
-const DemoCredentialItem = ({ role, user, pass, onClick }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-primary-600 hover:bg-primary-50 transition-all group text-left"
-    >
-        <div>
-            <span className="text-[10px] font-black uppercase text-slate-400 group-hover:text-primary-600 tracking-tighter">{role}</span>
-            <p className="text-sm font-bold text-slate-700">{user}</p>
-        </div>
-        <div className="text-right">
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-tighter">Password</span>
-            <p className="text-sm font-mono text-slate-500">{pass}</p>
-        </div>
-    </button>
-);
 
 export default Login;
