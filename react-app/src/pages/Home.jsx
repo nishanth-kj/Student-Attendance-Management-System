@@ -89,7 +89,7 @@ const Home = () => {
 
                                 <div className="prose prose-blue max-w-none text-gray-600">
                                     <p className="mb-4">
-                                        The <strong>Attendance Management System</strong> is a cutting-edge solution designed to modernize the traditional attendance tracking process in educational institutions.
+                                        The <strong>User Attendance System</strong> is a cutting-edge solution designed to modernize the traditional attendance tracking process in educational institutions.
                                     </p>
                                     <p className="mb-4">
                                         Developed by <strong>Neuro Kode's</strong>, this system leverages advanced computer vision and machine learning technologies to identify users via facial recognition, eliminating the need for manual roll calls or paper-based signatures.

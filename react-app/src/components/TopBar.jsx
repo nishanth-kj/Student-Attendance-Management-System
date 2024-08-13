@@ -16,7 +16,7 @@ const TopBar = ({ toggleSidebar, isSidebarOpen }) => {
                 <div className="flex items-center gap-2">
                     <img src="/favicon.png" alt="Logo" className="h-8 w-8 md:hidden" />
                     <h1 className="text-lg md:text-xl font-semibold text-gray-800 hidden sm:block">
-                        Attendance Management System
+                        Attendance System
                     </h1>
                 </div>
             </div>

@@ -49,10 +49,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                     {isOpen ? (
                         <div className="flex items-center gap-3">
                             <img src="/favicon.png" alt="Logo" className="h-8 w-8" />
-                            <span className="font-bold text-xl text-gray-900 truncate">Attendance Management System</span>
+                            <span className="font-bold text-lg text-gray-900 truncate">Attendance System</span>
                         </div>
                     ) : (
-                        <img src="/favicon.png" alt="SS" className="h-8 w-8" />
+                        <img src="/favicon.png" alt="Logo" className="h-8 w-8" />
                     )}
 
                     <button
@@ -120,7 +120,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
                         <div className="h-16 flex items-center px-4 border-b border-gray-200 gap-3 relative">
                             <img src="/favicon.png" alt="Logo" className="h-8 w-8" />
-                            <span className="font-bold text-xl text-gray-900">Attendance Management System</span>
+                            <span className="font-bold text-lg text-gray-900">User Attendance System</span>
 
                             {/* Toggle Button for Mobile Drawer */}
                             <button

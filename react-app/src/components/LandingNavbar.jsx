@@ -12,7 +12,7 @@ const LandingNavbar = () => {
                     <div className="flex items-center">
                         <Link to="/" className="flex items-center gap-2">
                             <img src="/favicon.png" alt="Logo" className="h-8 w-8" />
-                            <span className="font-bold text-xl text-gray-900 tracking-tight">Attendance Management System</span>
+                            <span className="font-bold text-xl text-gray-900 tracking-tight">Attendance System</span>
                         </Link>
                     </div>
 
